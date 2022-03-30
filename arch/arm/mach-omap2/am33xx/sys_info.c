@@ -127,7 +127,7 @@ int print_cpuinfo(void)
 	else
 		sec_s = "?";
 
-	printf("CPU  : %s-%s rev %s\n", cpu_s, sec_s, rev_s);
+	printf("CPU:   %s-%s rev %s\n", cpu_s, sec_s, rev_s);
 
 	return 0;
 }

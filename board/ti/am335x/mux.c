@@ -66,10 +66,13 @@ static struct module_pin_mux mmc0_pin_mux[] = {
 	{OFFSET(mmc0_clk), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CLK */
 	{OFFSET(mmc0_cmd), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CMD */
 	{OFFSET(mcasp0_aclkr), (MODE(4) | RXACTIVE)},		/* MMC0_WP */
+#if !defined(CONFIG_LUNAR_HC)
 	{OFFSET(spi0_cs1), (MODE(7) | RXACTIVE | PULLUP_EN)},	/* GPIO0_6 */
+#endif
 	{-1},
 };
 
+#if !defined(CONFIG_LUNAR_HC)
 static struct module_pin_mux mmc0_no_cd_pin_mux[] = {
 	{OFFSET(mmc0_dat3), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT3 */
 	{OFFSET(mmc0_dat2), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT2 */
@@ -91,6 +94,7 @@ static struct module_pin_mux mmc0_pin_mux_sk_evm[] = {
 	{OFFSET(spi0_cs1), (MODE(5) | RXACTIVE | PULLUP_EN)},	/* MMC0_CD */
 	{-1},
 };
+#endif
 
 static struct module_pin_mux mmc1_pin_mux[] = {
 	{OFFSET(gpmc_ad7), (MODE(1) | RXACTIVE | PULLUP_EN)},	/* MMC1_DAT7 */
@@ -116,6 +120,7 @@ static struct module_pin_mux i2c0_pin_mux[] = {
 	{-1},
 };
 
+#if !defined(CONFIG_LUNAR_HC)
 static struct module_pin_mux i2c1_pin_mux[] = {
 	{OFFSET(spi0_d1), (MODE(2) | RXACTIVE |
 			PULLUDEN | SLEWCTRL)},	/* I2C_DATA */
@@ -123,6 +128,7 @@ static struct module_pin_mux i2c1_pin_mux[] = {
 			PULLUDEN | SLEWCTRL)},	/* I2C_SCLK */
 	{-1},
 };
+#endif
 
 static struct module_pin_mux i2c2_pin_mux[] = {
 	{OFFSET(uart1_ctsn), (MODE(3) | RXACTIVE |
@@ -132,6 +138,7 @@ static struct module_pin_mux i2c2_pin_mux[] = {
 	{-1},
 };
 
+#if !defined(CONFIG_LUNAR_HC)
 static struct module_pin_mux spi0_pin_mux[] = {
 	{OFFSET(spi0_sclk), (MODE(0) | RXACTIVE | PULLUDEN)},	/* SPI0_SCLK */
 	{OFFSET(spi0_d0), (MODE(0) | RXACTIVE |
@@ -188,6 +195,7 @@ static struct module_pin_mux mii1_pin_mux[] = {
 	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
 	{-1},
 };
+#endif
 
 static struct module_pin_mux rmii1_pin_mux[] = {
 	{OFFSET(mdio_clk), MODE(0) | PULLUP_EN},	/* MDIO_CLK */
@@ -268,11 +276,13 @@ static struct module_pin_mux bone_norcape_pin_mux[] = {
 };
 #endif
 
+#if !defined(CONFIG_LUNAR_HC)
 static struct module_pin_mux uart3_icev2_pin_mux[] = {
 	{OFFSET(mii1_rxd3), (MODE(1) | PULLUP_EN | RXACTIVE)},	/* UART3_RXD */
 	{OFFSET(mii1_rxd2), MODE(1) | PULLUDEN},		/* UART3_TXD */
 	{-1},
 };
+#endif
 
 #if defined(CONFIG_NOR_BOOT)
 void enable_norboot_pin_mux(void)
@@ -321,6 +331,7 @@ void enable_i2c2_pin_mux(void)
 	configure_module_pin_mux(i2c2_pin_mux);
 }
 
+#if !defined(CONFIG_LUNAR_HC)
 /*
  * The AM335x GP EVM, if daughter card(s) are connected, can have 8
  * different profiles.  These profiles determine what peripherals are
@@ -365,9 +376,15 @@ static unsigned short detect_daughter_board_profile(void)
 #endif
 	return (1 << (val & PROFILE_MASK));
 }
+#endif
 
 void enable_board_pin_mux(void)
 {
+#if defined(CONFIG_LUNAR_HC)
+	configure_module_pin_mux(rmii1_pin_mux);
+	configure_module_pin_mux(mmc0_pin_mux);
+	configure_module_pin_mux(mmc1_pin_mux);
+#else
 	/* Do board-specific muxes. */
 	if (board_is_bone()) {
 		/* Beaglebone pinmux */
@@ -439,4 +456,5 @@ void enable_board_pin_mux(void)
 		/* Unknown board. We might still be able to boot. */
 		puts("Bad EEPROM or unknown board, cannot configure pinmux.");
 	}
+#endif
 }

@@ -1,0 +1,9 @@
+choice
+	prompt "Lunar Hardware"
+	default LUNAR_HC
+
+config LUNAR_HC
+	bool "HC"
+
+endchoice
+

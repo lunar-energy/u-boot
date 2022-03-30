@@ -412,6 +412,8 @@
 
 #define BOOTENV_DEV_NAME(devtypeu, devtypel, instance) \
 	BOOTENV_DEV_NAME_##devtypeu(devtypeu, devtypel, instance)
+
+#if !defined(CONFIG_LUNAR_HC)
 #define BOOTENV_BOOT_TARGETS \
 	"boot_targets=" BOOT_TARGET_DEVICES(BOOTENV_DEV_NAME) "\0"
 
@@ -420,33 +422,10 @@
 #define BOOTENV \
 	BOOTENV_SHARED_HOST \
 	BOOTENV_SHARED_MMC \
-	BOOTENV_SHARED_PCI \
-	BOOTENV_SHARED_USB \
-	BOOTENV_SHARED_SATA \
-	BOOTENV_SHARED_SCSI \
-	BOOTENV_SHARED_NVME \
-	BOOTENV_SHARED_IDE \
-	BOOTENV_SHARED_UBIFS \
-	BOOTENV_SHARED_EFI \
-	BOOTENV_SHARED_VIRTIO \
 	"boot_prefixes=/ /boot/\0" \
 	"boot_scripts=boot.scr.uimg boot.scr\0" \
 	"boot_script_dhcp=boot.scr.uimg\0" \
 	BOOTENV_BOOT_TARGETS \
-	\
-	"boot_syslinux_conf=extlinux/extlinux.conf\0" \
-	"boot_extlinux="                                                  \
-		"sysboot ${devtype} ${devnum}:${distro_bootpart} any "    \
-			"${scriptaddr} ${prefix}${boot_syslinux_conf}\0"  \
-	\
-	"scan_dev_for_extlinux="                                          \
-		"if test -e ${devtype} "                                  \
-				"${devnum}:${distro_bootpart} "           \
-				"${prefix}${boot_syslinux_conf}; then "   \
-			"echo Found ${prefix}${boot_syslinux_conf}; "     \
-			"run boot_extlinux; "                             \
-			"echo SCRIPT FAILED: continuing...; "             \
-		"fi\0"                                                    \
 	\
 	"boot_a_script="                                                  \
 		"load ${devtype} ${devnum}:${distro_bootpart} "           \
@@ -469,10 +448,8 @@
 		"echo Scanning ${devtype} "                               \
 				"${devnum}:${distro_bootpart}...; "       \
 		"for prefix in ${boot_prefixes}; do "                     \
-			"run scan_dev_for_extlinux; "                     \
 			"run scan_dev_for_scripts; "                      \
 		"done;"                                                   \
-		SCAN_DEV_FOR_EFI                                          \
 		"\0"                                                      \
 	\
 	"scan_dev_for_boot_part="                                         \
@@ -496,6 +473,60 @@
 		"for target in ${boot_targets}; do "                      \
 			"run bootcmd_${target}; "                         \
 		"done\0"
+
+#else // CONFIG_LUNAR_HC
+
+#define BOOTENV_DEV(devtypeu, devtypel, instance) \
+	BOOTENV_DEV_##devtypeu(devtypeu, devtypel, instance)
+#define BOOTENV \
+	BOOTENV_SHARED_HOST \
+	BOOTENV_SHARED_MMC \
+	"boot_prefixes=/ /boot/\0" \
+	"boot_scripts=boot.scr.uimg boot.scr\0" \
+	"boot_script_dhcp=boot.scr.uimg\0" \
+	\
+	"boot_a_script="                                                  \
+		"load ${devtype} ${devnum}:${distro_bootpart} "           \
+			"${scriptaddr} ${prefix}${script}; "              \
+		"source ${scriptaddr}\0"                                  \
+	\
+	"scan_dev_for_scripts="                                           \
+		"for script in ${boot_scripts}; do "                      \
+			"if test -e ${devtype} "                          \
+					"${devnum}:${distro_bootpart} "   \
+					"${prefix}${script}; then "       \
+				"echo Found U-Boot script "               \
+					"${prefix}${script}; "            \
+				"run boot_a_script; "                     \
+				"echo SCRIPT FAILED: continuing...; "     \
+			"fi; "                                            \
+		"done\0"                                                  \
+	\
+	"scan_dev_for_boot="                                              \
+		"echo Scanning ${devtype} "                               \
+				"${devnum}:${distro_bootpart}...; "       \
+		"for prefix in ${boot_prefixes}; do "                     \
+			"run scan_dev_for_scripts; "                      \
+		"done;"                                                   \
+		"\0"                                                      \
+	\
+	"scan_dev_for_boot_part="                                         \
+		"part list ${devtype} ${devnum} -bootable devplist; "     \
+		"env exists devplist || setenv devplist 1; "              \
+		"for distro_bootpart in ${devplist}; do "                 \
+			"if fstype ${devtype} "                           \
+					"${devnum}:${distro_bootpart} "   \
+					"bootfstype; then "               \
+				"run scan_dev_for_boot; "                 \
+			"fi; "                                            \
+		"done; "                                                  \
+		"setenv devplist\0"					  \
+	\
+	"distro_bootcmd=" \
+		"for target in ${boot_targets}; do "                      \
+			"run bootcmd_${target}; "                         \
+		"done\0"
+#endif
 
 #ifndef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND "run distro_bootcmd"

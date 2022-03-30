@@ -161,9 +161,13 @@ static int __maybe_unused ti_i2c_eeprom_get(int bus_addr, int dev_addr,
 			return rc;
 	}
 	if (hdr_read != header)
+	{
+		printf("hdr_read %x != header %x\n", hdr_read, header);
 		return -1;
+	}
 
 	rc = i2c_read(dev_addr, 0x0, byte, ep, size);
+
 	if (rc)
 		return rc;
 #endif
@@ -285,12 +289,19 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	ep->version[0] = 0x0;
 	ep->serial[0] = 0x0;
 	ep->config[0] = 0x0;
+#if defined(CONFIG_LUNAR_HC)
+	ep->part_number[0] = 0x0;
+	ep->revision[0] = 0x0;
+	ep->serial_number[0] = 0x0;
+#endif
 
 	rc = ti_i2c_eeprom_get(bus_addr, dev_addr, TI_EEPROM_HEADER_MAGIC,
 			       sizeof(am_ep), (uint8_t *)&am_ep);
 	if (rc)
+	{
+		printf("ti_i2c_eeprom_am_get error\n");
 		return rc;
-
+	}
 	ep->header = am_ep.header;
 	strlcpy(ep->name, am_ep.name, TI_EEPROM_HDR_NAME_LEN + 1);
 	ti_eeprom_string_cleanup(ep->name);
@@ -309,6 +320,17 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 
 	memcpy(ep->mac_addr, am_ep.mac_addr,
 	       TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
+
+#if defined(CONFIG_LUNAR_HC)
+	strlcpy(ep->part_number, am_ep.part_number, LUNAR_HC_EEPROM_PART_NUMBER_LEN + 1);
+	ti_eeprom_string_cleanup(ep->part_number);
+
+	strlcpy(ep->revision, am_ep.revision, LUNAR_HC_EEPROM_REVISION_LEN + 1);
+	ti_eeprom_string_cleanup(ep->revision);
+
+	strlcpy(ep->serial_number, am_ep.serial_number, LUNAR_HC_EEPROM_SERIAL_NUMBER + 1);
+	ti_eeprom_string_cleanup(ep->serial_number);
+#endif
 
 	return 0;
 }
@@ -677,6 +699,35 @@ void __maybe_unused set_board_info_env(char *name)
 		env_set("board_serial", ep->serial);
 	else
 		env_set("board_serial", unknown);
+
+#if defined(CONFIG_LUNAR_HC)
+	if (strlen(ep->part_number) != 0)
+	{
+		env_set("lunar_part_number", ep->part_number);
+	}
+	else
+	{
+		env_set("lunar_part_number", unknown);
+	}
+
+	if (strlen(ep->revision) != 0)
+	{
+		env_set("lunar_revision", ep->revision);
+	}
+	else
+	{
+		env_set("lunar_revision", unknown);
+	}
+
+	if (strlen(ep->serial_number) != 0)
+	{
+		env_set("lunar_serial_number", ep->serial_number);
+	}
+	else
+	{
+		env_set("lunar_serial_number", unknown);
+	}
+#endif
 }
 
 void __maybe_unused set_board_info_env_am6(char *name)

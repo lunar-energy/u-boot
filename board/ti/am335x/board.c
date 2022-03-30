@@ -39,13 +39,18 @@
 #include <cpsw.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
+#if !defined(CONFIG_LUNAR_HC)
 #include <power/tps65217.h>
 #include <power/tps65910.h>
+#endif
 #include <env_internal.h>
 #include <watchdog.h>
 #include "../common/board_detect.h"
 #include "../common/cape_detect.h"
 #include "board.h"
+#if defined(CONFIG_LUNAR_HC)
+#include <net.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -56,7 +61,11 @@ DECLARE_GLOBAL_DATA_PTR;
 #define GPIO_PR1_MII_CTRL	GPIO_TO_PIN(3, 4)
 #define GPIO_MUX_MII_CTRL	GPIO_TO_PIN(3, 10)
 #define GPIO_FET_SWITCH_CTRL	GPIO_TO_PIN(0, 7)
+#if defined(CONFIG_LUNAR_HC)
+#define GPIO_PHY_RESET		GPIO_TO_PIN(2, 19)
+#else
 #define GPIO_PHY_RESET		GPIO_TO_PIN(2, 5)
+#endif
 #define GPIO_ETH0_MODE		GPIO_TO_PIN(0, 11)
 #define GPIO_ETH1_MODE		GPIO_TO_PIN(1, 26)
 
@@ -81,11 +90,17 @@ void do_board_detect(void)
 	enable_i2c2_pin_mux();
 #if !CONFIG_IS_ENABLED(DM_I2C)
 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
+#if !defined(CONFIG_LUNAR_HC)
 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED2, CONFIG_SYS_OMAP24_I2C_SLAVE2);
 #endif
-	if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
-				 CONFIG_EEPROM_CHIP_ADDRESS))
+#endif
+	if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS, CONFIG_EEPROM_CHIP_ADDRESS))
+	{
 		printf("ti_i2c_eeprom_init failed\n");
+	}
+#if defined(CONFIG_LUNAR_HC)
+
+#endif
 }
 #endif
 
@@ -100,6 +115,7 @@ struct serial_device *default_serial_console(void)
 #endif
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
+#if !defined(CONFIG_LUNAR_HC)
 static const struct ddr_data ddr2_data = {
 	.datardsratio0 = MT47H128M16RT25E_RD_DQS,
 	.datafwsratio0 = MT47H128M16RT25E_PHY_FIFO_WE,
@@ -249,6 +265,7 @@ static struct emif_regs ddr3_icev2_emif_reg_data = {
 	.emif_ddr_phy_ctlr_1 = MT41J128MJT125_EMIF_READ_LATENCY_400MHz |
 				PHY_EN_DYN_PWRDN,
 };
+#endif
 
 #ifdef CONFIG_SPL_OS_BOOT
 int spl_start_uboot(void)
@@ -273,7 +290,9 @@ int spl_start_uboot(void)
 const struct dpll_params *get_dpll_ddr_params(void)
 {
 	int ind = get_sys_clk_index();
-
+#if defined(CONFIG_LUNAR_HC)
+	return &dpll_ddr3_303MHz[ind];
+#else
 	if (board_is_evm_sk())
 		return &dpll_ddr3_303MHz[ind];
 	else if (board_is_pb() || board_is_bone_lt() || board_is_icev2())
@@ -282,8 +301,10 @@ const struct dpll_params *get_dpll_ddr_params(void)
 		return &dpll_ddr3_303MHz[ind];
 	else
 		return &dpll_ddr2_266MHz[ind];
+#endif
 }
 
+#if !defined(CONFIG_LUNAR_HC)
 static u8 bone_not_connected_to_ac_power(void)
 {
 	if (board_is_bone()) {
@@ -298,18 +319,23 @@ static u8 bone_not_connected_to_ac_power(void)
 	}
 	return 0;
 }
+#endif
 
 const struct dpll_params *get_dpll_mpu_params(void)
 {
 	int ind = get_sys_clk_index();
-	int freq = am335x_get_efuse_mpu_max_freq(cdev);
+	int freq = 0;
+#if defined(CONFIG_LUNAR_HC)
+	freq = MPUPLL_M_1000;
+#else
+	freq = am335x_get_efuse_mpu_max_freq(cdev);
 
 	if (bone_not_connected_to_ac_power())
 		freq = MPUPLL_M_600;
 
 	if (board_is_pb() || board_is_bone_lt())
 		freq = MPUPLL_M_1000;
-
+#endif
 	switch (freq) {
 	case MPUPLL_M_1000:
 		return &dpll_mpu_opp[ind][5];
@@ -328,6 +354,7 @@ const struct dpll_params *get_dpll_mpu_params(void)
 	return &dpll_mpu_opp[ind][0];
 }
 
+#if !defined(CONFIG_LUNAR_HC)
 static void scale_vcores_bone(int freq)
 {
 	int usb_cur_lim, mpu_vdd;
@@ -464,6 +491,7 @@ void scale_vcores_generic(int freq)
 		return;
 
 }
+#endif
 
 void gpi2c_init(void)
 {
@@ -486,11 +514,12 @@ void scale_vcores(void)
 
 	gpi2c_init();
 	freq = am335x_get_efuse_mpu_max_freq(cdev);
-
+#if !defined(CONFIG_LUNAR_HC)
 	if (board_is_beaglebonex())
 		scale_vcores_bone(freq);
 	else
 		scale_vcores_generic(freq);
+#endif
 }
 
 void set_uart_mux_conf(void)
@@ -547,8 +576,49 @@ const struct ctrl_ioregs ioregs = {
 	.dt1ioctl		= MT47H128M16RT25E_IOCTRL_VALUE,
 };
 
+static const struct ddr_data	ddr3_HOMECONTROLLER_ddr_data	= {
+	.datardsratio0 =	0x00000040	,
+	.datawdsratio0 =	0x0000007D	,
+	.datafwsratio0 =	0x000000E8	,
+	.datawrsratio0 = 	0x000000BD	,
+};
+
+static const struct cmd_control 	ddr3_HOMECONTROLLER_cmd_ctrl_data	= {
+	.cmd0csratio = 	0x00000100	,
+	.cmd0iclkout = 	0x00000001	,
+	.cmd1csratio = 	0x00000100	,
+	.cmd1iclkout = 	0x00000001	,
+	.cmd2csratio = 	0x00000100	,
+	.cmd2iclkout = 	0x00000001	,
+};
+
+static struct emif_regs 	ddr3_HOMECONTROLLER_emif_reg_data	= {
+	.sdram_config = 0x61A05332	,
+	.ref_ctrl = 	0x0000093B	,
+	.zq_config = 	0x50074BE1	,
+	.sdram_tim1 = 	0x0888A39B 	,
+	.sdram_tim2 = 	0x44517FDA	,
+	.sdram_tim3 = 	0x50FFE4EF	,
+	.emif_ddr_phy_ctlr_1 = 	0x00100208	,
+};
+
+const struct ctrl_ioregs 	ddr3_HOMECONTROLLER_ioregs_data	= {
+	.cm0ioctl =	0x0000018B	,
+	.cm1ioctl =	0x0000018B	,
+	.cm2ioctl =	0x0000018B	,
+	.dt0ioctl =	0x0000018B	,
+	.dt1ioctl =	0x0000018B	,
+};
+
+
 void sdram_init(void)
 {
+#if defined(CONFIG_LUNAR_HC)
+	config_ddr(303, &ddr3_HOMECONTROLLER_ioregs_data,
+		&ddr3_HOMECONTROLLER_ddr_data,
+		&ddr3_HOMECONTROLLER_cmd_ctrl_data,
+		&ddr3_HOMECONTROLLER_emif_reg_data, 0);
+#else
 	if (board_is_evm_sk()) {
 		/*
 		 * EVM SK 1.2A and later use gpio0_7 to enable DDR3.
@@ -584,10 +654,11 @@ void sdram_init(void)
 	else
 		config_ddr(266, &ioregs, &ddr2_data,
 			   &ddr2_cmd_ctrl_data, &ddr2_emif_reg_data, 0);
+#endif
 }
 #endif
 
-#if defined(CONFIG_CLOCK_SYNTHESIZER) && (!defined(CONFIG_SPL_BUILD) || \
+#if defined(CONFIG_LUNAR_HC) || defined(CONFIG_CLOCK_SYNTHESIZER) && (!defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_SPL_ETH) && defined(CONFIG_SPL_BUILD)))
 static void request_and_set_gpio(int gpio, char *name, int val)
 {
@@ -612,10 +683,12 @@ static void request_and_set_gpio(int gpio, char *name, int val)
 err_free_gpio:
 	gpio_free(gpio);
 }
+#endif
 
 #define REQUEST_AND_SET_GPIO(N)	request_and_set_gpio(N, #N, 1);
 #define REQUEST_AND_CLR_GPIO(N)	request_and_set_gpio(N, #N, 0);
 
+#if !defined(CONFIG_LUNAR_HC)
 /**
  * RMII mode on ICEv2 board needs 50MHz clock. Given the clock
  * synthesizer With a capacitor of 18pF, and 25MHz input clock cycle
@@ -714,6 +787,26 @@ done:
  */
 int board_init(void)
 {
+#if defined(CONFIG_LUNAR_HC)
+	u32 sys_reboot;
+
+	sys_reboot = readl(PRM_RSTST);
+	if (sys_reboot & (1 << 9))
+		puts("RESET: IcePick reset has occurred\n");
+
+	if (sys_reboot & (1 << 5))
+		puts("RESET: Global external warm reset has occurred\n");
+
+	if (sys_reboot & (1 << 4))
+		puts("RESET: watchdog reset has occurred\n");
+
+	if (sys_reboot & (1 << 1))
+		puts("RESET: Global warm SW reset has occurred\n");
+
+	if (sys_reboot & (1 << 0))
+		puts("RESET: Power-on reset has occurred\n");
+#endif
+
 #if defined(CONFIG_HW_WATCHDOG)
 	hw_watchdog_init();
 #endif
@@ -723,6 +816,17 @@ int board_init(void)
 	gpmc_init();
 #endif
 
+#if defined(CONFIG_LUNAR_HC)
+	gpmc_init();
+
+	REQUEST_AND_SET_GPIO(GPIO_PHY_RESET);
+	puts("ENET:  Reset Phy\n");
+	/* Reset PHYs to capture the Jumper setting */
+	gpio_set_value(GPIO_PHY_RESET, 0);
+	udelay(1000);
+	gpio_set_value(GPIO_PHY_RESET, 1);
+	udelay(1000);
+#else
 #if defined(CONFIG_CLOCK_SYNTHESIZER) && (!defined(CONFIG_SPL_BUILD) || \
 	(defined(CONFIG_SPL_ETH) && defined(CONFIG_SPL_BUILD)))
 	if (board_is_icev2()) {
@@ -794,6 +898,7 @@ int board_init(void)
 		gpio_set_value(GPIO_PHY_RESET, 1);
 	}
 #endif
+#endif
 
 	return 0;
 }
@@ -809,6 +914,11 @@ int board_late_init(void)
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	char *name = NULL;
+
+	if (board_is_lehc())
+	{
+		name = "LEHC";
+	}
 
 	if (board_is_bone_lt()) {
 		/* BeagleBoard.org BeagleBone Black Wireless: */
@@ -829,6 +939,7 @@ int board_late_init(void)
 		name = "BBG1";
 	if (board_is_bben())
 		name = "BBEN";
+
 	set_board_info_env(name);
 
 	/*
@@ -889,6 +1000,7 @@ int board_late_init(void)
 }
 #endif
 
+#if !defined(CONFIG_LUNAR_HC)
 /* CPSW plat */
 #if !CONFIG_IS_ENABLED(OF_CONTROL)
 struct cpsw_slave_data slave_data[] = {
@@ -936,7 +1048,7 @@ U_BOOT_DRVINFO(am335x_eth) = {
 	.plat = &cpsw_pdata,
 };
 #endif
-
+#endif
 #ifdef CONFIG_SPL_LOAD_FIT
 int board_fit_config_name_match(const char *name)
 {
