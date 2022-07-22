@@ -149,7 +149,7 @@ static int eeprom_rw_block(unsigned offset, uchar *addr, unsigned alen,
 		ret = dm_i2c_write(dev, offset, buffer, len);
 
 #else /* Non DM I2C support - will be removed */
-#if !defined(CONFIG_LUNAR_HC)
+#if !defined(CONFIG_TARGET_AM335X_HC)
 	if (read)
 		ret = i2c_read(addr[0], offset, alen - 1, buffer, len);
 	else

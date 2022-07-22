@@ -1109,7 +1109,7 @@ static void cpsw_gmii_sel_am3352(struct cpsw_priv *priv,
 	reg &= ~mask;
 	reg |= mode;
 
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	puts("eth0: FLC RMII MODE, EXTERNAL CLOCK MODE, NO-INTERNAL-DELAY\n");
 	reg=0xc5;
 #endif

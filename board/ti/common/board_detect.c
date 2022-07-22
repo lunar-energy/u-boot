@@ -289,7 +289,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	ep->version[0] = 0x0;
 	ep->serial[0] = 0x0;
 	ep->config[0] = 0x0;
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	ep->part_number[0] = 0x0;
 	ep->revision[0] = 0x0;
 	ep->serial_number[0] = 0x0;
@@ -321,7 +321,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 	memcpy(ep->mac_addr, am_ep.mac_addr,
 	       TI_EEPROM_HDR_NO_OF_MAC_ADDR * TI_EEPROM_HDR_ETH_ALEN);
 
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	strlcpy(ep->part_number, am_ep.part_number, LUNAR_HC_EEPROM_PART_NUMBER_LEN + 1);
 	ti_eeprom_string_cleanup(ep->part_number);
 
@@ -700,7 +700,7 @@ void __maybe_unused set_board_info_env(char *name)
 	else
 		env_set("board_serial", unknown);
 
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	if (strlen(ep->part_number) != 0)
 	{
 		env_set("lunar_part_number", ep->part_number);

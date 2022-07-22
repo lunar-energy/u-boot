@@ -203,7 +203,7 @@ void spl_board_init(void)
 	gpmc_init();
 #endif
 #if defined(CONFIG_SPL_I2C) && !CONFIG_IS_ENABLED(DM_I2C)
-#if !defined (CONFIG_LUNAR_HC)
+#if !defined (CONFIG_TARGET_AM335X_HC)
 	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
 #endif
 #endif

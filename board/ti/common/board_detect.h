@@ -20,7 +20,7 @@
 #define TI_EEPROM_HDR_NO_OF_MAC_ADDR	3
 #define TI_EEPROM_HDR_ETH_ALEN		6
 
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 #define LUNAR_HC_EEPROM_PART_NUMBER_LEN (9)
 #define LUNAR_HC_EEPROM_REVISION_LEN (2)
 #define LUNAR_HC_EEPROM_SERIAL_NUMBER (12)
@@ -48,7 +48,7 @@ struct ti_am_eeprom {
 	char serial[TI_EEPROM_HDR_SERIAL_LEN];
 	char config[TI_EEPROM_HDR_CONFIG_LEN];
 	char mac_addr[TI_EEPROM_HDR_NO_OF_MAC_ADDR][TI_EEPROM_HDR_ETH_ALEN];
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	char pre_lunar_padding[18];
 	char part_number[LUNAR_HC_EEPROM_PART_NUMBER_LEN];
 	char revision[LUNAR_HC_EEPROM_REVISION_LEN];
@@ -234,7 +234,7 @@ struct ti_common_eeprom {
 	char mac_addr[TI_EEPROM_HDR_NO_OF_MAC_ADDR][TI_EEPROM_HDR_ETH_ALEN];
 	u64 emif1_size;
 	u64 emif2_size;
-#if defined(CONFIG_LUNAR_HC)
+#if defined(CONFIG_TARGET_AM335X_HC)
 	char part_number[LUNAR_HC_EEPROM_PART_NUMBER_LEN+1];
 	char revision[LUNAR_HC_EEPROM_REVISION_LEN+1];
 	char serial_number[LUNAR_HC_EEPROM_SERIAL_NUMBER+1];

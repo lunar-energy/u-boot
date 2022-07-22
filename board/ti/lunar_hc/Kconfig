@@ -1,0 +1,17 @@
+if TARGET_AM335X_HC
+
+config SYS_BOARD
+	default "lunar_hc"
+
+config SYS_VENDOR
+	default "ti"
+
+config SYS_SOC
+	default "am33xx"
+
+config SYS_CONFIG_NAME
+	default "am335x_hc"
+
+source "board/ti/common/Kconfig"
+
+endif
