@@ -68,7 +68,7 @@
 #include <environment/ti/mmc.h>
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"console=ttyO0,115200n8\0" \
+	"console=ttyS0,115200n8\0" \
 	"search_path=/ /boot/\0" \
 	"environment_file=uEnv.txt\0" \
 	"bootscript_file=boot.scr\0" \
